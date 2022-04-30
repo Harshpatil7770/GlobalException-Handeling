@@ -1,7 +1,10 @@
 package com.crud.ecart.controller;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,6 +15,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.supercsv.io.CsvBeanWriter;
+import org.supercsv.io.ICsvBeanWriter;
+import org.supercsv.prefs.CsvPreference;
 
 import com.crud.ecart.model.Brand;
 import com.crud.ecart.model.Product;
@@ -94,12 +100,65 @@ public class ProductController {
 		log.info(methodName + " called");
 		return existingProduct;
 	}
-	
+
 	@GetMapping("/category/{categoryName}")
-	public List<Product> fetchProductByCategoryName(@PathVariable String categoryName){
+	public List<Product> fetchProductByCategoryName(@PathVariable String categoryName) {
 		List<Product> existingProduct = productService.findByCategoryName(categoryName);
 		String methodName = "fetchProductByCategoryName()";
 		log.info(methodName + " called");
 		return existingProduct;
 	}
+
+	@GetMapping("/downloadCsv")
+	public void downloadCsvFile(HttpServletResponse response) {
+		try {
+			response.setContentType("text/csv");
+			response.setHeader("Content-Disposition", "attachment;filename=ecart.csv");
+			ICsvBeanWriter csvwriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
+			String[] fileHeading = { "Product Id", "Product Name", "Price", "Description", "Brand", "Category" };
+			String[] pojoclassPropertynames = { "productId", "productName", "price", "description", "brand",
+					"category" };
+			csvwriter.writeHeader(fileHeading);
+
+			List<Product> productList = fetchAllProducts();
+			if (null != productList && !productList.isEmpty()) {
+				for (Product product : productList) {
+					csvwriter.write(product, pojoclassPropertynames);
+				}
+			}
+			csvwriter.close();
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+
+	}
+
+	@GetMapping("/downloadCsv/{brandName}")
+	public void downloadCsvFileBasedNoBrandName(HttpServletResponse response,@PathVariable String brandName) {
+		try {
+			response.setContentType("text/csv");
+			response.setHeader("Content-Disposition", "attachment;filename=ecart.csv");
+			ICsvBeanWriter csvwriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
+			String[] fileHeading = { "Product Id", "Product Name", "Price", "Description", "Brand", "Category" };
+			String[] pojoclassPropertynames = { "productId", "productName", "price", "description", "brand",
+					"category" };
+			csvwriter.writeHeader(fileHeading);
+
+			List<Product> productList = fetchProductByBrandName(brandName);
+			if (null != productList && !productList.isEmpty()) {
+				for (Product product : productList) {
+					csvwriter.write(product, pojoclassPropertynames);
+				}
+			}
+			csvwriter.close();
+
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
+
+	}
+
 }
